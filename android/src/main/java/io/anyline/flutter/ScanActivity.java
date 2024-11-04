@@ -3,6 +3,7 @@ package io.anyline.flutter;
 import static io.anyline2.sdk.extension.ScanViewInitializationParametersExtensionKt.getScanViewInitializationParametersFromJsonObject;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.ColorStateList;
@@ -14,9 +15,11 @@ import android.util.Pair;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.TextView;
 
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 
@@ -65,6 +68,10 @@ public class ScanActivity extends Activity implements CameraOpenListener,
 
     private Map<String, Barcode> nativeBarcodeMap = null;
 
+    private View backButton = null;
+    private CompoundButton switchHV = null;
+    private TextView txtScanLabel = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,13 +87,22 @@ public class ScanActivity extends Activity implements CameraOpenListener,
         anylineScanView = findViewById(R.id.anyline_scan_view);
         radioGroup = findViewById(R.id.radiogroup_segment);
         layoutChangeOrientation = findViewById(R.id.layout_change_orientation);
-
+        backButton = findViewById(R.id.btn_back);
+        switchHV = findViewById(R.id.switchHV);
+        txtScanLabel = findViewById(R.id.txtScanLabel);
         if (savedInstanceState != null) {
             defaultOrientationApplied = savedInstanceState.getBoolean(KEY_DEFAULT_ORIENTATION_APPLIED);
         }
 
         initScanView();
+        setupBackButton();
         setDebugListener();
+    }
+
+    private void setupBackButton() {
+        backButton.setOnClickListener(view -> {
+            onBackPressed();
+        });
     }
 
     /**
@@ -260,14 +276,20 @@ public class ScanActivity extends Activity implements CameraOpenListener,
                         if (!pairs.isEmpty()) {
                             Rect rect = pairs.get(0).second;
 
-                            CoordinatorLayout.LayoutParams segmentLayoutParams =
-                                    new CoordinatorLayout.LayoutParams(rect.width(), anylineScanView.getHeight() - rect.bottom);
-                            segmentLayoutParams.setMargins(rect.left, rect.bottom, rect.right, anylineScanView.getBottom());
-                            radioGroup.setLayoutParams(segmentLayoutParams);
+//                            CoordinatorLayout.LayoutParams segmentLayoutParams =
+//                                    new CoordinatorLayout.LayoutParams(rect.width(), anylineScanView.getHeight() - rect.bottom);
+//                            segmentLayoutParams.setMargins(rect.left, rect.bottom, rect.right, anylineScanView.getBottom());
+//                            radioGroup.setLayoutParams(segmentLayoutParams);
+//
+//                            radioGroup.setVisibility(View.VISIBLE);
+//                            txtScanLabel.setLayoutParams(segmentLayoutParams);
+//
+//                            txtScanLabel.setVisibility(View.VISIBLE);
 
-                            radioGroup.setVisibility(View.VISIBLE);
+                            configTxtScanLabelOnCutoutChanged(rect);
                         } else {
-                            radioGroup.setVisibility(View.GONE);
+//                            radioGroup.setVisibility(View.GONE);
+                            txtScanLabel.setVisibility(View.GONE);
                         }
                     }
                 };
@@ -286,6 +308,8 @@ public class ScanActivity extends Activity implements CameraOpenListener,
                         anylineScanView.getCameraView().addNativeBarcodeReceivedEventListener(this, barcodeFormatsList);
                     }
                 }
+
+                addSegmentSwitchHVButton(scanViewPlugin, optionsJson);
             }
 
             layoutChangeOrientation.setVisibility(View.GONE);
@@ -301,12 +325,13 @@ public class ScanActivity extends Activity implements CameraOpenListener,
 
                 setDefaultOrientation();
 
-                if (optionsJson.has("segmentConfig")) {
-                    // create the radio button for the UI
-                    addSegmentRadioButtonUI(optionsJson, viewConfigAssetFileName);
-                } else {
-                    radioGroup.setVisibility(View.GONE);
-                }
+//                // disable radioButton
+//                if (optionsJson.has("segmentConfig")) {
+//                    // create the radio button for the UI
+//                    addSegmentRadioButtonUI(optionsJson, viewConfigAssetFileName);
+//                } else {
+//                    radioGroup.setVisibility(View.GONE);
+//                }
             }
         } catch (Exception e) {
             finishWithError(
@@ -417,5 +442,71 @@ public class ScanActivity extends Activity implements CameraOpenListener,
 
     private boolean shouldShowRotateButton(JSONObject jsonObject) {
         return jsonObject.has("rotateButton");
+    }
+
+    private void configTxtScanLabelOnCutoutChanged(Rect rect) {
+        int margin = convertDpToPx(26.5f, this);
+        int topOfCutout = rect.top;
+        int marginBottomNeeded = anylineScanView.getHeight() / 2 - topOfCutout + margin;
+        CoordinatorLayout.LayoutParams segmentLayoutParams = new CoordinatorLayout.LayoutParams(CoordinatorLayout.LayoutParams.WRAP_CONTENT, CoordinatorLayout.LayoutParams.WRAP_CONTENT);
+        segmentLayoutParams.gravity = Gravity.CENTER;
+        segmentLayoutParams.setMargins(0, -marginBottomNeeded, 0, marginBottomNeeded);
+        txtScanLabel.setLayoutParams(segmentLayoutParams);
+
+        txtScanLabel.setVisibility(View.VISIBLE);
+    }
+
+    private void addSegmentSwitchHVButton(ScanViewPlugin scanViewPlugin, JSONObject optionsJson) {
+        if (scanViewPlugin.id().equals("container_horizontal") || scanViewPlugin.id().equals("container_vertical")) {
+            Log.d(TAG, scanViewPlugin.id());
+            if (optionsJson.has("segmentConfig")) {
+                Log.d(TAG, "setupHorizonVerticalContainerSwitch: " + scanViewPlugin.id());
+                anylineUIConfig = new AnylineUIConfig(optionsJson);
+                final ArrayList<String> viewConfigs = anylineUIConfig.getViewConfigs();
+                if (viewConfigs.size() == 2) {
+                    switchHV.setVisibility(View.VISIBLE);
+                    boolean isVerticalAsInitMode = scanViewPlugin.id().equals("container_vertical");
+                    setupHorizonVerticalContainerSwitch(isVerticalAsInitMode);
+                }
+            }
+        } else switchHV.setVisibility(View.GONE);
+    }
+
+    private void setupHorizonVerticalContainerSwitch(boolean isVerticalAsInitMode) {
+        final ArrayList<String> viewConfigs = anylineUIConfig.getViewConfigs();
+        if (viewConfigs.size() < 2) return;
+
+        String configHorizontal;
+        String configVertical;
+        if (isVerticalAsInitMode) {
+            configVertical = viewConfigs.get(0);
+            configHorizontal = viewConfigs.get(1);
+        } else {
+            configVertical = viewConfigs.get(1);
+            configHorizontal = viewConfigs.get(0);
+        }
+
+        switchHV.setChecked(isVerticalAsInitMode);
+
+        switchHV.setOnCheckedChangeListener((compoundButton, newBoolValue) -> {
+            String newViewConfig;
+            if (newBoolValue) {
+                newViewConfig = configVertical;
+            } else {
+                newViewConfig = configHorizontal;
+            }
+
+            anylineScanView.stop();
+            setScanConfig(newViewConfig);
+            anylineScanView.start();
+        });
+    }
+
+    public static float convertPxToDp(float px, Context context) {
+        return px / (context.getResources().getDisplayMetrics().densityDpi / 160f);
+    }
+
+    public static int convertDpToPx(float dp, Context context) {
+        return (int) (dp * (context.getResources().getDisplayMetrics().densityDpi / 160f));
     }
 }

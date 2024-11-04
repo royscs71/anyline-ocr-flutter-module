@@ -35,5 +35,41 @@
             android:src="@drawable/rotate_screen_white" />
     </LinearLayout>
 
+    <ImageView
+        android:id="@+id/btn_back"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="btn_back"
+        android:minHeight="?attr/actionBarSize"
+        android:padding="8dp"
+        android:src="@drawable/arrow_back_ios_new"
+        app:tint="@color/white" />
+
+    <androidx.appcompat.widget.AppCompatToggleButton
+        android:id="@+id/switchHV"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center|bottom"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
+        android:layout_marginBottom="32dp"
+        android:background="@drawable/toggle_background"
+        android:checked="false"
+        android:minHeight="48dp"
+        android:text=""
+        android:textColor="@color/toogle_color"
+        android:textOff="Horizontal"
+        android:textOn="Vertical"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/txtScanLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Scan Container Zone"
+        android:layout_gravity="center"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        android:visibility="gone" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
