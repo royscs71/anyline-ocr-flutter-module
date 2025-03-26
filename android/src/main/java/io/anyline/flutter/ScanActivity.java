@@ -21,6 +21,7 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 
 import org.json.JSONArray;
@@ -44,11 +45,12 @@ import io.anyline2.camera.CameraController;
 import io.anyline2.camera.CameraOpenListener;
 import io.anyline2.model.AnylineYuvImage;
 import io.anyline2.view.ScanView;
+import io.anyline2.view.ScanViewLoadResult;
 import io.anyline2.viewplugin.ScanViewPlugin;
 import io.anyline2.viewplugin.ViewPluginBase;
 
 
-public class ScanActivity extends Activity implements CameraOpenListener,
+public class ScanActivity extends AppCompatActivity implements CameraOpenListener,
         Thread.UncaughtExceptionHandler,
         Event<Pair<AnylineYuvImage, BarcodeResult>> {
     private static final String TAG = ScanActivity.class.getSimpleName();
@@ -94,8 +96,15 @@ public class ScanActivity extends Activity implements CameraOpenListener,
             defaultOrientationApplied = savedInstanceState.getBoolean(KEY_DEFAULT_ORIENTATION_APPLIED);
         }
 
-        initScanView();
-        setupBackButton();
+        anylineScanView.setOnScanViewLoaded(scanViewLoadResult -> {
+            if (scanViewLoadResult instanceof ScanViewLoadResult.Succeeded) {
+                initScanView();
+                setupBackButton();
+            } else {
+                ScanViewLoadResult.Failed scanViewLoadFailed = (ScanViewLoadResult.Failed) scanViewLoadResult;
+                finishWithError(scanViewLoadFailed.getErrorMessage());
+            }
+        });
         setDebugListener();
     }
 
@@ -200,6 +209,7 @@ public class ScanActivity extends Activity implements CameraOpenListener,
     private void initScanView() {
         try {
             setScanConfig(new JSONObject(configString), null);
+            anylineScanView.start();
         } catch (Exception e) {
             // JSONException or IllegalArgumentException is possible for errors in json
             // IOException is possible for errors during asset copying
