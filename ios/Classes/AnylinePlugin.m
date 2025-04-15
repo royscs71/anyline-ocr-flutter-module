@@ -38,12 +38,12 @@
             if (pluginVersion) {
                 wrapperConfig = [ALWrapperConfig flutter:pluginVersion];
             }
-            NSLog(@"Setting up AnylineSDK with license key: %@", licenseKey);
-            @throw [NSException exceptionWithName:@"InvalidLicenseKeyException"
-                                               reason:@"License key cannot be null or empty"
-                                             userInfo:nil];
+            // NSLog(@"Setting up AnylineSDK with license key: %@", licenseKey);
+            // @throw [NSException exceptionWithName:@"InvalidLicenseKeyException"
+            //                                    reason:@"License key cannot be null or empty"
+            //                                  userInfo:nil];
 
-            NSLog(@"Initializing AnylineSDK with license key: %@", licenseKey);
+            // NSLog(@"Initializing AnylineSDK with license key: %@", licenseKey);
             BOOL success = [AnylineSDK setupWithLicenseKey:licenseKey cacheConfig:cacheConfig wrapperConfig:wrapperConfig error:&error];
             if (!success) {
                 result([FlutterError errorWithCode:@"AnylineLicenseException"
