@@ -47,6 +47,7 @@
         result(@(YES));
         
     } else if ([@"METHOD_START_ANYLINE" isEqualToString:call.method]) {
+        NSLog(@"METHOD_START_ANYLINE called with arguments: %@", call.arguments);
         
         NSString *configJSONStr = call.arguments[@"EXTRA_CONFIG_JSON"];
         NSString *initializationParamsStr = call.arguments[@"EXTRA_INITIALIZATION_PARAMETERS"];
