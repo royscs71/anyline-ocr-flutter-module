@@ -12,6 +12,14 @@ NSErrorDomain const ALFlutterDomain = @"ALFlutterDomain";
 
 + (void)startScan:(NSDictionary *)config initializationParamsStr:(NSString *)initializationParamsStr finished:(ALPluginCallback)callback {
     
+       // Adding an exception to reproduce crash issue
+    NSException* exception = [NSException
+                              exceptionWithName:@"AnylineCrashTest"
+                              reason:@"Intentional crash to reproduce issue"
+                              userInfo:nil];
+                              
+    [exception raise];
+    
     NSDictionary *pluginConf = config;
     
     NSString *licenseKey = [config objectForKey:@"licenseKey"];
