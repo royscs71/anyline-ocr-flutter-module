@@ -11,6 +11,7 @@ NSErrorDomain const ALFlutterDomain = @"ALFlutterDomain";
 #pragma mark - Launch Anyline
 
 + (void)startScan:(NSDictionary *)config initializationParamsStr:(NSString *)initializationParamsStr finished:(ALPluginCallback)callback {
+
     
     NSDictionary *pluginConf = config;
     
