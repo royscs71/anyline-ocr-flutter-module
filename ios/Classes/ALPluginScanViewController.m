@@ -268,16 +268,19 @@
         return;
     }
     
-    CGFloat xOffset = self.uiConfig.labelXPositionOffset;
-    CGFloat yOffset = self.uiConfig.labelYPositionOffset;
-    
-    // takes into account that frame reported for a cutout is in relation to
-    // its scan view's coordinate system
-    yOffset += [self.scanView convertRect:frame toView:self.scanView.superview].origin.y;
-    
-    self.labelHorizontalOffsetConstraint.constant = xOffset;
-    
-    self.labelVerticalOffsetConstraint.constant = yOffset;
+    // Making sure UI updates happen on the main thread to avoid threading issues
+    dispatch_async(dispatch_get_main_queue(), ^{
+        CGFloat xOffset = self.uiConfig.labelXPositionOffset;
+        CGFloat yOffset = self.uiConfig.labelYPositionOffset;
+        
+        // takes into account that frame reported for a cutout is in relation to
+        // its scan view's coordinate system
+        yOffset += [self.scanView convertRect:frame toView:self.scanView.superview].origin.y;
+        
+        self.labelHorizontalOffsetConstraint.constant = xOffset;
+        
+        self.labelVerticalOffsetConstraint.constant = yOffset;
+    });
 }
 
 - (void)scanView:(ALScanView *)scanView didReceiveNativeBarcodeResult:(ALScanResult *)scanResult {
