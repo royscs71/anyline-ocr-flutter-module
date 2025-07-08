@@ -2,7 +2,6 @@ package io.anyline.flutter;
 
 import static io.anyline2.sdk.extension.ScanViewInitializationParametersExtensionKt.getScanViewInitializationParametersFromJsonObject;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -13,6 +12,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Gravity;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.CompoundButton;
@@ -21,6 +21,8 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 
+import androidx.activity.OnBackPressedCallback;
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 
@@ -43,7 +45,7 @@ import io.anyline2.Event;
 import io.anyline2.ScanResult;
 import io.anyline2.camera.CameraController;
 import io.anyline2.camera.CameraOpenListener;
-import io.anyline2.model.AnylineYuvImage;
+import io.anyline2.model.AbstractAnylineImage;
 import io.anyline2.view.ScanView;
 import io.anyline2.view.ScanViewLoadResult;
 import io.anyline2.viewplugin.ScanViewPlugin;
@@ -52,7 +54,7 @@ import io.anyline2.viewplugin.ViewPluginBase;
 
 public class ScanActivity extends AppCompatActivity implements CameraOpenListener,
         Thread.UncaughtExceptionHandler,
-        Event<Pair<AnylineYuvImage, BarcodeResult>> {
+        Event<Pair<AbstractAnylineImage, BarcodeResult>> {
     private static final String TAG = ScanActivity.class.getSimpleName();
 
     protected String viewConfigsPath = "";
@@ -77,6 +79,14 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                ResultReporter.onCancel();
+                finish();
+            }
+        });
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
@@ -105,7 +115,15 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
                 finishWithError(scanViewLoadFailed.getErrorMessage());
             }
         });
-        setDebugListener();
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            getOnBackPressedDispatcher().onBackPressed();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     private void setupBackButton() {
@@ -153,13 +171,6 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
         finishWithError("error_accessing_camera");
     }
 
-
-    @Override
-    public void onBackPressed() {
-        ResultReporter.onCancel();
-        super.onBackPressed();
-    }
-
     protected void setResult(ScanViewPlugin scanViewPlugin, String jsonResult) {
         boolean isCancelOnResult = scanViewPlugin.scanPlugin.getScanPluginConfig().getCancelOnResult();
 
@@ -197,30 +208,32 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
         super.onPause();
     }
 
-    private void setDebugListener() {
-        ViewPluginBase scanViewPlugin = anylineScanView.getScanViewPlugin();
-        if (scanViewPlugin != null) {
-            scanViewPlugin.scanInfoReceived = jsonObject -> Log.d(TAG, "info received: " + jsonObject.toString());
-            scanViewPlugin.runSkippedReceived = jsonObject -> Log.d(TAG, "run skipped: " + jsonObject.toString());
-            scanViewPlugin.errorReceived = jsonObject -> Log.w(TAG, "error received: " + jsonObject.toString());
+    private void setupToolbar(String toolbarTitle) {
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
         }
+        setTitle(toolbarTitle);
     }
 
     private void initScanView() {
+        JSONObject configJsonObject;
         try {
-            setScanConfig(new JSONObject(configString), null);
-            anylineScanView.start();
+            configJsonObject = new JSONObject(configString);
         } catch (Exception e) {
-            // JSONException or IllegalArgumentException is possible for errors in json
-            // IOException is possible for errors during asset copying
+            // JSONException is possible for errors in json
             finishWithError(
                     getString(getResources().getIdentifier("error_invalid_json_data", "string", getPackageName()))
                             + "\n" + e.getLocalizedMessage());
+            return;
+        }
+        if (setScanConfig(configJsonObject, null)) {
+            anylineScanView.start();
         }
     }
 
     @Override
-    public void eventReceived(Pair<AnylineYuvImage, BarcodeResult> anylineYuvImageBarcodeResultPair) {
+    public void eventReceived(Pair<AbstractAnylineImage, BarcodeResult> anylineYuvImageBarcodeResultPair) {
         if (nativeBarcodeMap == null) {
             nativeBarcodeMap = new HashMap<>();
         }
@@ -229,7 +242,7 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
         }
     }
 
-    private void setScanConfig(String viewConfigAssetFileName) {
+    private boolean setScanConfig(String viewConfigAssetFileName) {
         try {
             InputStream is = getAssets().open(viewConfigsPath + "/" + viewConfigAssetFileName);
             int size = is.available();
@@ -238,18 +251,25 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
             is.close();
             String viewConfigContent = new String(buffer, StandardCharsets.UTF_8);
 
-            setScanConfig(new JSONObject(viewConfigContent), viewConfigAssetFileName);
+            return setScanConfig(new JSONObject(viewConfigContent), viewConfigAssetFileName);
         } catch (Exception e) {
             finishWithError(
                     getString(getResources().getIdentifier("error_invalid_json_data", "string", getPackageName()))
                             + "\n" + e.getLocalizedMessage());
         }
+        return false;
     }
 
-    private void setScanConfig(JSONObject scanConfigJson, String viewConfigAssetFileName) {
+    private boolean setScanConfig(JSONObject scanConfigJson, String viewConfigAssetFileName) {
 
         try {
             optionsJson = scanConfigJson.optJSONObject("options");
+            if (optionsJson != null) {
+                anylineUIConfig = new AnylineUIConfig(optionsJson);
+                if (anylineUIConfig.hasToolbarTitle) {
+                    setupToolbar(anylineUIConfig.getToolbarTitle());
+                }
+            }
 
             anylineScanView.getCameraView().removeNativeBarcodeReceivedEventListener(this);
             nativeBarcodeMap = null;
@@ -260,7 +280,6 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
             } else {
                 anylineScanView.init(scanConfigJson);
             }
-
 
             ViewPluginBase viewPluginBase = anylineScanView.getScanViewPlugin();
             if (viewPluginBase != null) {
@@ -335,19 +354,22 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
 
                 setDefaultOrientation();
 
-//                // disable radioButton
+                // disable radioButton
 //                if (optionsJson.has("segmentConfig")) {
 //                    // create the radio button for the UI
-//                    addSegmentRadioButtonUI(optionsJson, viewConfigAssetFileName);
+//                    addSegmentRadioButtonUI(viewConfigAssetFileName);
 //                } else {
 //                    radioGroup.setVisibility(View.GONE);
 //                }
+
             }
+            return true;
         } catch (Exception e) {
             finishWithError(
                     getString(getResources().getIdentifier("error_invalid_initialization_parameters", "string", getPackageName()))
                             + "\n" + e.getLocalizedMessage());
         }
+        return false;
     }
 
     private void setDefaultOrientation() {
@@ -361,8 +383,7 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
         defaultOrientationApplied = true;
     }
 
-    private void addSegmentRadioButtonUI(JSONObject optionsJson, String currentSegment) {
-        anylineUIConfig = new AnylineUIConfig(optionsJson);
+    private void addSegmentRadioButtonUI(String currentSegment) {
         setupRadioGroup(anylineUIConfig, currentSegment);
     }
 
@@ -407,8 +428,9 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
                 String newViewConfig = viewConfigs.get(group.indexOfChild(button1));
 
                 anylineScanView.stop();
-                setScanConfig(newViewConfig);
-                anylineScanView.start();
+                if (setScanConfig(newViewConfig)) {
+                    anylineScanView.start();
+                }
             });
         }
     }
@@ -419,6 +441,16 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
                 CoordinatorLayout.LayoutParams.WRAP_CONTENT);
 
         buttonLayoutParams.gravity = Gravity.TOP | Gravity.RIGHT;
+
+        int marginLeft = 0;
+        int marginTop = 0;
+        int marginRight = 0;
+        int marginBottom = 0;
+        if (rotateButtonConfig.hasOffset()) {
+            marginLeft = rotateButtonConfig.getOffset().getX();
+            marginTop = rotateButtonConfig.getOffset().getY();
+        }
+
         String alignment = rotateButtonConfig.getAlignment();
         if (!alignment.isEmpty()) {
             if (alignment.equals("top_left")) {
@@ -426,17 +458,24 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
             }
             if (alignment.equals("top_right")) {
                 buttonLayoutParams.gravity = Gravity.TOP | Gravity.RIGHT;
+                marginRight = -marginLeft;
+                marginLeft = 0;
             }
             if (alignment.equals("bottom_left")) {
                 buttonLayoutParams.gravity = Gravity.BOTTOM | Gravity.LEFT;
+                marginBottom = -marginTop;
+                marginTop = 0;
             }
             if (alignment.equals("bottom_right")) {
                 buttonLayoutParams.gravity = Gravity.BOTTOM | Gravity.RIGHT;
+                marginRight = -marginLeft;
+                marginLeft = 0;
+                marginBottom = -marginTop;
+                marginTop = 0;
             }
         }
-        if (rotateButtonConfig.hasOffset()) {
-            buttonLayoutParams.setMargins(rotateButtonConfig.getOffset().getX(), rotateButtonConfig.getOffset().getY(), 0, 0);
-        }
+        buttonLayoutParams.setMargins(marginLeft, marginTop, marginRight, marginBottom);
+
         layoutChangeOrientation.setLayoutParams(buttonLayoutParams);
         layoutChangeOrientation.requestLayout();
 
