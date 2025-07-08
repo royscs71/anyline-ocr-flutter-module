@@ -9,9 +9,7 @@
     <io.anyline2.view.ScanView
         android:id="@+id/anyline_scan_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="24dp"
-        android:layout_marginBottom="24dp" />
+        android:layout_height="match_parent"/>
 
     <RadioGroup
         android:id="@+id/radiogroup_segment"
@@ -25,9 +23,9 @@
         android:id="@+id/layout_change_orientation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="right|top"
+        android:layout_gravity="end|top"
         android:gravity="center"
-        android:padding="42px"
+        android:padding="42dp"
         android:visibility="gone">
         <ImageView
             android:id="@+id/imageview_change_orientation"
@@ -44,7 +42,7 @@
         android:layout_height="wrap_content"
         android:contentDescription="btn_back"
         android:minHeight="?attr/actionBarSize"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="12dp"
         android:padding="8dp"
         android:src="@drawable/arrow_back_ios_new"
         app:tint="@color/white" />

@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
@@ -27,6 +28,9 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -100,7 +104,6 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
         initializationParametersString = getIntent().getStringExtra(Constants.EXTRA_INITIALIZATION_PARAMETERS);
 
         setContentView(R.layout.activity_scan_scanview);
-
         anylineScanView = findViewById(R.id.anyline_scan_view);
         radioGroup = findViewById(R.id.radiogroup_segment);
         layoutChangeOrientation = findViewById(R.id.layout_change_orientation);
@@ -226,6 +229,8 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
                     View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
                     View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                 );
+                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+                getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
             }
         } catch (Exception e) {
             // Fallback: just continue without special system bar handling
