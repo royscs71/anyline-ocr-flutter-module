@@ -211,22 +211,14 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
     private void setupSystemBars() {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                // For Android 11 (API 30) and above, including Android 14 (API 35)
+                // For Android 11 (API 30) and above
                 getWindow().setDecorFitsSystemWindows(false);
                 WindowInsetsController controller = getWindow().getInsetsController();
                 if (controller != null) {
-                    // Set light status bar appearance
                     controller.setSystemBarsAppearance(
                         WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
                         WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
                     );
-                    // Optionally, set light navigation bar if needed
-                    controller.setSystemBarsAppearance(
-                        WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
-                        WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
-                    );
-                    // Show both bars (status & navigation)
-                    controller.show(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
                 }
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 // For Android 6.0 (API 23) to Android 10 (API 29)
