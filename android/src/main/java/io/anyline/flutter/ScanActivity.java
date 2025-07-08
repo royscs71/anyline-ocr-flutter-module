@@ -27,6 +27,9 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -63,6 +66,7 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
     protected String configString;
     protected String initializationParametersString;
 
+    private View parentLayout;
     private ScanView anylineScanView;
     private RadioGroup radioGroup = null;
     private LinearLayout layoutChangeOrientation = null;
@@ -100,7 +104,7 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
         initializationParametersString = getIntent().getStringExtra(Constants.EXTRA_INITIALIZATION_PARAMETERS);
 
         setContentView(R.layout.activity_scan_scanview);
-
+        parentLayout = findViewById(R.id.parent_layout);
         anylineScanView = findViewById(R.id.anyline_scan_view);
         radioGroup = findViewById(R.id.radiogroup_segment);
         layoutChangeOrientation = findViewById(R.id.layout_change_orientation);
@@ -213,6 +217,11 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 // For Android 11 (API 30) and above
                 getWindow().setDecorFitsSystemWindows(false);
+                ViewCompat.setOnApplyWindowInsetsListener(this.parentLayout, (v, insets) -> {
+                    Insets systemInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                    v.setPadding(systemInsets.left, systemInsets.top, systemInsets.right, systemInsets.bottom);
+                    return insets;
+                });
                 WindowInsetsController controller = getWindow().getInsetsController();
                 if (controller != null) {
                     controller.setSystemBarsAppearance(
