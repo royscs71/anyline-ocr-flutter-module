@@ -82,24 +82,8 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Handle system bars and status bar properly
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // For Android 11 (API 30) and above
-            getWindow().setDecorFitsSystemWindows(false);
-            WindowInsetsController controller = getWindow().getInsetsController();
-            if (controller != null) {
-                controller.setSystemBarsAppearance(
-                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
-                    WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-                );
-            }
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // For Android 6.0 (API 23) to Android 10 (API 29)
-            getWindow().getDecorView().setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
-                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-            );
-        }
+        // Handle system bars and status bar properly - move to onResume for safer execution
+        setupSystemBars();
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -214,9 +198,38 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
     @Override
     protected void onResume() {
         super.onResume();
+        
+        // Setup system bars here when window is fully initialized
+        setupSystemBars();
+        
         if (anylineScanView.isInitialized()) {
             // start scanning
             anylineScanView.start();
+        }
+    }
+
+    private void setupSystemBars() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                // For Android 11 (API 30) and above
+                getWindow().setDecorFitsSystemWindows(false);
+                WindowInsetsController controller = getWindow().getInsetsController();
+                if (controller != null) {
+                    controller.setSystemBarsAppearance(
+                        WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
+                        WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                    );
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                // For Android 6.0 (API 23) to Android 10 (API 29)
+                getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                );
+            }
+        } catch (Exception e) {
+            // Fallback: just continue without special system bar handling
+            Log.w(TAG, "Failed to setup system bars: " + e.getMessage());
         }
     }
 
