@@ -67,7 +67,6 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
     protected String configString;
     protected String initializationParametersString;
 
-    private View parentLayout;
     private ScanView anylineScanView;
     private RadioGroup radioGroup = null;
     private LinearLayout layoutChangeOrientation = null;
@@ -105,7 +104,6 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
         initializationParametersString = getIntent().getStringExtra(Constants.EXTRA_INITIALIZATION_PARAMETERS);
 
         setContentView(R.layout.activity_scan_scanview);
-        parentLayout = findViewById(R.id.parent_layout);
         anylineScanView = findViewById(R.id.anyline_scan_view);
         radioGroup = findViewById(R.id.radiogroup_segment);
         layoutChangeOrientation = findViewById(R.id.layout_change_orientation);
