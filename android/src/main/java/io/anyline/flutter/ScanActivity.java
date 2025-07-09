@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
@@ -15,6 +16,8 @@ import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
@@ -25,6 +28,9 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -80,6 +86,9 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Handle system bars and status bar properly - move to onResume for safer execution
+        setupSystemBars();
+
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -95,7 +104,6 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
         initializationParametersString = getIntent().getStringExtra(Constants.EXTRA_INITIALIZATION_PARAMETERS);
 
         setContentView(R.layout.activity_scan_scanview);
-
         anylineScanView = findViewById(R.id.anyline_scan_view);
         radioGroup = findViewById(R.id.radiogroup_segment);
         layoutChangeOrientation = findViewById(R.id.layout_change_orientation);
@@ -193,9 +201,40 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
     @Override
     protected void onResume() {
         super.onResume();
+        
+        // Setup system bars here when window is fully initialized
+        setupSystemBars();
+        
         if (anylineScanView.isInitialized()) {
             // start scanning
             anylineScanView.start();
+        }
+    }
+
+    private void setupSystemBars() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                // For Android 11 (API 30) and above
+                getWindow().setDecorFitsSystemWindows(false);
+                WindowInsetsController controller = getWindow().getInsetsController();
+                if (controller != null) {
+                    controller.setSystemBarsAppearance(
+                        WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
+                        WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                    );
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                // For Android 6.0 (API 23) to Android 10 (API 29)
+                getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                );
+                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+                getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            }
+        } catch (Exception e) {
+            // Fallback: just continue without special system bar handling
+            Log.w(TAG, "Failed to setup system bars: " + e.getMessage());
         }
     }
 

@@ -10,6 +10,6 @@
         <activity
             android:name=".ScanActivity"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppCompat"/>
+            android:theme="@style/AppTheme"/>
     </application>
 </manifest>
