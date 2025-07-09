@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
@@ -217,11 +218,6 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 // For Android 11 (API 30) and above
                 getWindow().setDecorFitsSystemWindows(false);
-                ViewCompat.setOnApplyWindowInsetsListener(this.parentLayout, (v, insets) -> {
-                    Insets systemInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-                    v.setPadding(systemInsets.left, systemInsets.top, systemInsets.right, systemInsets.bottom);
-                    return insets;
-                });
                 WindowInsetsController controller = getWindow().getInsetsController();
                 if (controller != null) {
                     controller.setSystemBarsAppearance(
@@ -235,6 +231,8 @@ public class ScanActivity extends AppCompatActivity implements CameraOpenListene
                     View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
                     View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                 );
+                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+                getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
             }
         } catch (Exception e) {
             // Fallback: just continue without special system bar handling
